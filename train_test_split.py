@@ -9,6 +9,8 @@ df = pd.read_csv('./data/features_30_sec.csv')
 
 data_path = './data/genres_original/'
 
+le = LabelEncoder()
+
 train_array = []
 test_array = []
 val_array = []
@@ -42,3 +44,17 @@ with open('val.csv', 'w', newline='') as file:
     writer.writerow(['file', 'label'])
     for row in val_array: 
         writer.writerow(row) 
+
+train = pd.read_csv('./train.csv')
+test = pd.read_csv('./test.csv')
+val = pd.read_csv('./val.csv')
+
+le.fit(train['label'])
+
+train['label_encoded'] = le.transform(train['label'])
+test['label_encoded'] = le.transform(test['label'])
+val['label_encoded'] = le.transform(val['label'])
+
+train.to_csv('train.csv', index=False)
+test.to_csv('test.csv', index=False)
+val.to_csv('val.csv', index=False)
