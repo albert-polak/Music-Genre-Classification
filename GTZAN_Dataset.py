@@ -3,8 +3,43 @@ from torch.utils.data import DataLoader
 import pandas as pd
 import librosa
 import numpy as np
+from torch.utils.data import DataLoader, Dataset
+import os
 
 from torchvision import transforms
+
+class GTZANDataset(Dataset):
+    def __init__(self, data_dir, dataframe, sampling_rate=12000, duration=30, skip_duration=15):
+        self.data_dir = data_dir
+        self.sampling_rate = sampling_rate
+        self.duration = duration
+        self.skip_duration = skip_duration
+        self.sample_duration = self.duration * self.sampling_rate
+        self.sample_skip_duration = self.skip_duration * self.sampling_rate
+        self.dataframe = dataframe
+
+    def __len__(self):
+        return len(self.dataframe)
+
+    def __getitem__(self, idx):
+        file_path = os.path.join(self.data_dir, self.dataframe.iloc[idx]['label'], self.dataframe.iloc[idx]['file'])
+        audio_file, _ = librosa.load(file_path, sr=self.sampling_rate)
+
+        audio_file = audio_file[self.sample_skip_duration:self.sample_duration + self.sample_skip_duration]
+
+        if audio_file.shape[0] < self.sample_duration:
+            audio_file = np.hstack((audio_file, np.zeros((int(self.sample_duration) - audio_file.shape[0],))))
+
+        mel = librosa.feature.melspectrogram(y=audio_file, sr=self.sampling_rate)
+        mel_db = librosa.amplitude_to_db(mel, ref=np.max)
+        
+
+        # Apply normalization here
+        mel_db = (mel_db - np.mean(mel_db)) / np.std(mel_db)
+        mel_db = mel_db[np.newaxis, ...]       
+        label_encoded = self.dataframe.iloc[idx]['label_encoded']
+
+        return mel_db, label_encoded
 
 class GTZANDataModule(L.LightningDataModule):
     def __init__(self, data_dir: str = "./"):
@@ -13,7 +48,7 @@ class GTZANDataModule(L.LightningDataModule):
         self.sampling_rate = 12000
         self.duration = 30
         self.skip_duration = 15
-        self.batch_size = 1
+        self.batch_size = 32
         self.sample_duration = self.duration * self.sampling_rate
         self.sample_skip_duration = self.skip_duration * self.sampling_rate
 
@@ -30,47 +65,31 @@ class GTZANDataModule(L.LightningDataModule):
         
         mel = librosa.feature.melspectrogram(y=audio_file, sr=self.sampling_rate)
         mel_db = librosa.amplitude_to_db(mel, ref=np.max)
+        
+        # Apply normalization here
+        mel_db = (mel_db - np.mean(mel_db)) / np.std(mel_db)
+        
         return mel_db
 
     def setup(self, stage: str):
-        # Assign train/val datasets for use in dataloaders
-        self.train = pd.read_csv('./train.csv', sep=',')
-        self.test = pd.read_csv('./test.csv', sep=',')
-        self.val = pd.read_csv('./val.csv', sep=',')
-        self.train_data = []
-        self.test_data = []
-        self.val_data = []
-        for index, i in self.train.iterrows():
-            audio_file, _ = librosa.load(self.data_dir+i['label']+'/'+i['file'], sr=self.sampling_rate)
+               # Load dataframes for train, test, and val
+        self.train_df = pd.read_csv('./train.csv', sep=',')
+        self.test_df = pd.read_csv('./test.csv', sep=',')
+        self.val_df = pd.read_csv('./val.csv', sep=',')
 
-            mel_db = self.to_mel(audio_file=audio_file)
-            mel_db = mel_db[np.newaxis, ...]         
-
-            self.train_data.append([mel_db, i['label_encoded']])
-
-        for index, i in self.test.iterrows():
-            audio_file, _ = librosa.load(self.data_dir+i['label']+'/'+i['file'], sr=self.sampling_rate)
-            mel_db = self.to_mel(audio_file=audio_file)
-            mel_db = mel_db[np.newaxis, ...]
-
-            self.test_data.append([mel_db, i['label_encoded']])
-
-        for index, i in self.val.iterrows():
-            audio_file, _ = librosa.load(self.data_dir+i['label']+'/'+i['file'], sr=self.sampling_rate)
-            mel_db = self.to_mel(audio_file=audio_file)
-            mel_db = mel_db[np.newaxis, ...]
-
-            self.val_data.append([mel_db, i['label_encoded']])
-
+        # Create dataset instances
+        self.train_dataset = GTZANDataset(self.data_dir, self.train_df)
+        self.test_dataset = GTZANDataset(self.data_dir, self.test_df)
+        self.val_dataset = GTZANDataset(self.data_dir, self.val_df)
 
     def train_dataloader(self):
-        return DataLoader(self.train_data, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_data, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_data, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True)
 
     # def predict_dataloader(self):
     #     return DataLoader(self.mnist_predict, batch_size=32)
