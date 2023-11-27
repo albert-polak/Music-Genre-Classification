@@ -5,11 +5,11 @@ import librosa
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 import os
-
+import random
 from torchvision import transforms
 
 class GTZANDataset(Dataset):
-    def __init__(self, data_dir, dataframe, sampling_rate=12000, duration=30, skip_duration=15):
+    def __init__(self, data_dir, dataframe, sampling_rate=12000, duration=30, skip_duration=15, mode="train"):
         self.data_dir = data_dir
         self.sampling_rate = sampling_rate
         self.duration = duration
@@ -17,6 +17,7 @@ class GTZANDataset(Dataset):
         self.sample_duration = self.duration * self.sampling_rate
         self.sample_skip_duration = self.skip_duration * self.sampling_rate
         self.dataframe = dataframe
+        self.mode = mode
 
     def __len__(self):
         return len(self.dataframe)
@@ -24,8 +25,11 @@ class GTZANDataset(Dataset):
     def __getitem__(self, idx):
         file_path = os.path.join(self.data_dir, self.dataframe.iloc[idx]['label'], self.dataframe.iloc[idx]['file'])
         audio_file, _ = librosa.load(file_path, sr=self.sampling_rate)
-
-        audio_file = audio_file[self.sample_skip_duration:self.sample_duration + self.sample_skip_duration]
+        start_idx = random.randint(0, len(audio_file) - self.sample_duration)
+        if self.mode == "train":
+            audio_file = audio_file[start_idx:self.sample_duration + start_idx]
+        else:
+            audio_file = audio_file[self.sample_skip_duration:self.sample_duration + self.sample_skip_duration]
 
         if audio_file.shape[0] < self.sample_duration:
             audio_file = np.hstack((audio_file, np.zeros((int(self.sample_duration) - audio_file.shape[0],))))
@@ -78,9 +82,9 @@ class GTZANDataModule(L.LightningDataModule):
         self.val_df = pd.read_csv('./val.csv', sep=',')
 
         # Create dataset instances
-        self.train_dataset = GTZANDataset(self.data_dir, self.train_df)
-        self.test_dataset = GTZANDataset(self.data_dir, self.test_df)
-        self.val_dataset = GTZANDataset(self.data_dir, self.val_df)
+        self.train_dataset = GTZANDataset(self.data_dir, self.train_df, mode="train")
+        self.test_dataset = GTZANDataset(self.data_dir, self.test_df, mode="test")
+        self.val_dataset = GTZANDataset(self.data_dir, self.val_df, mode="val")
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
