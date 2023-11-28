@@ -31,7 +31,7 @@ class C_RNN(L.LightningModule):
 
         self.cnn_model = nn.Sequential(
             nn.Conv2d(1, 64, (3,3)),
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Conv2d(64, 128, (3,3)),

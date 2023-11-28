@@ -26,14 +26,14 @@ class GTZANDataset(Dataset):
         file_path = os.path.join(self.data_dir, self.dataframe.iloc[idx]['label'], self.dataframe.iloc[idx]['file'])
         audio_file, _ = librosa.load(file_path, sr=self.sampling_rate)
 
-        if len(audio_file) >= self.sample_duration:
-            start_idx = random.randint(0, len(audio_file) - self.sample_duration)
-        else:
-            start_idx = self.sample_skip_duration
-        if self.mode == "train":
-            audio_file = audio_file[start_idx:self.sample_duration + start_idx]
-        else:
-            audio_file = audio_file[self.sample_skip_duration:self.sample_duration + self.sample_skip_duration]
+        # if len(audio_file) >= self.sample_duration:
+        #     start_idx = random.randint(0, len(audio_file) - self.sample_duration)
+        # else:
+        #     start_idx = self.sample_skip_duration
+        # if self.mode == "train":
+        #     audio_file = audio_file[start_idx:self.sample_duration + start_idx]
+        # else:
+        #     audio_file = audio_file[self.sample_skip_duration:self.sample_duration + self.sample_skip_duration]
 
         if audio_file.shape[0] < self.sample_duration:
             audio_file = np.hstack((audio_file, np.zeros((int(self.sample_duration) - audio_file.shape[0],))))
