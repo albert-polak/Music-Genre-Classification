@@ -25,7 +25,11 @@ class GTZANDataset(Dataset):
     def __getitem__(self, idx):
         file_path = os.path.join(self.data_dir, self.dataframe.iloc[idx]['label'], self.dataframe.iloc[idx]['file'])
         audio_file, _ = librosa.load(file_path, sr=self.sampling_rate)
-        start_idx = random.randint(0, len(audio_file) - self.sample_duration)
+
+        if len(audio_file) >= self.sample_duration:
+            start_idx = random.randint(0, len(audio_file) - self.sample_duration)
+        else:
+            start_idx = self.sample_skip_duration
         if self.mode == "train":
             audio_file = audio_file[start_idx:self.sample_duration + start_idx]
         else:
@@ -73,6 +77,7 @@ class GTZANDataModule(L.LightningDataModule):
         # Apply normalization here
         mel_db = (mel_db - np.mean(mel_db)) / np.std(mel_db)
         
+        
         return mel_db
 
     def setup(self, stage: str):
@@ -90,10 +95,10 @@ class GTZANDataModule(L.LightningDataModule):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
     # def predict_dataloader(self):
     #     return DataLoader(self.mnist_predict, batch_size=32)

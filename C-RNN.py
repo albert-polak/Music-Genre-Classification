@@ -31,18 +31,27 @@ class C_RNN(L.LightningModule):
 
         self.cnn_model = nn.Sequential(
             nn.Conv2d(1, 64, (3,3)),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
+            nn.Dropout(0.1),
             nn.Conv2d(64, 128, (3,3)),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
+            nn.Dropout(0.1),
             nn.Conv2d(128, 128, (3,3)),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
+            nn.Dropout(0.1),
             nn.Conv2d(128, 128, (3,3)),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
+            nn.Dropout(0.1),
            
         )
 
         self.gru =  nn.GRU(83520, 256, 2, batch_first=True)
-        self.fc = torch.nn.Linear(256, 10)
+        self.fc = nn.Sequential(torch.nn.Linear(256, 10),
+                                nn.Dropout(0.3))
 
         self.loss_fn = nn.CrossEntropyLoss()  
 
@@ -134,6 +143,7 @@ if __name__ == "__main__":
         "max_epochs": 1000,
         "callbacks": [checkpoint_callback],
         "precision": 32,
+        "log_every_n_steps": 1,
     }
 
     trainer = L.Trainer(**trainer_args)
