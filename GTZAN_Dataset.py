@@ -55,7 +55,7 @@ class GTZANDataModule(L.LightningDataModule):
     def __init__(self, data_dir: str = "./"):
         super().__init__()
         self.data_dir = data_dir
-        
+        self.batch_size = 32
 
     # def prepare_data(self):
     #     # download
