@@ -9,7 +9,7 @@ import random
 from torchvision import transforms
 
 class GTZANDataset(Dataset):
-    def __init__(self, data_dir, dataframe, sampling_rate=12000, duration=7, skip_duration=15, mode="train"):
+    def __init__(self, data_dir, dataframe, sampling_rate=12000, duration=7, skip_duration=10, mode="train"):
         self.data_dir = data_dir
         self.sampling_rate = sampling_rate
         self.duration = duration
@@ -32,6 +32,9 @@ class GTZANDataset(Dataset):
             start_idx = 0
         if self.mode == "train":
             audio_file = audio_file[start_idx:self.sample_duration + start_idx]
+
+        if self.mode == "val":
+            audio_file = audio_file[self.sample_skip_duration:self.sample_duration+self.sample_skip_duration]
         
 
         if audio_file.shape[0] < self.sample_duration:

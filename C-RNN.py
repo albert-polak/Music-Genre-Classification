@@ -30,24 +30,27 @@ class C_RNN(L.LightningModule):
         self.num_classes = 10
 
         self.cnn_model = nn.Sequential(
-            nn.Conv2d(1, 64, (3,3)),
+            nn.Conv2d(1, 64, (3, 3)),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Conv2d(64, 128, (3,3)),
+            nn.Dropout(0.3),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(64, 128, (3, 3)),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Conv2d(128, 128, (3,3)),
+            nn.Dropout(0.3),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(128, 128, (3, 3)),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Conv2d(128, 128, (3,3)),
+            nn.Dropout(0.3),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(128, 128, (3, 3)),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Dropout(0.1),
-           
-        )
+            nn.Dropout(0.3),
+            nn.MaxPool2d((2, 2)),
+            )
 
         self.gru =  nn.GRU(128, 256, 1, batch_first=True)
         self.fc = nn.Sequential(torch.nn.Linear(256, 10),
@@ -82,7 +85,7 @@ class C_RNN(L.LightningModule):
         return output
     
     def configure_optimizers(self):
-            scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.90)
+            scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.90)
             return {"optimizer": self.optimizer, "lr_scheduler": scheduler}
 
     def _step(self, batch):
