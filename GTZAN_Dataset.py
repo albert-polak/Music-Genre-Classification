@@ -9,7 +9,7 @@ import random
 from torchvision import transforms
 
 class GTZANDataset(Dataset):
-    def __init__(self, data_dir, dataframe, sampling_rate=12000, duration=30, skip_duration=15, mode="train"):
+    def __init__(self, data_dir, dataframe, sampling_rate=12000, duration=7, skip_duration=15, mode="train"):
         self.data_dir = data_dir
         self.sampling_rate = sampling_rate
         self.duration = duration
@@ -26,17 +26,19 @@ class GTZANDataset(Dataset):
         file_path = os.path.join(self.data_dir, self.dataframe.iloc[idx]['label'], self.dataframe.iloc[idx]['file'])
         audio_file, _ = librosa.load(file_path, sr=self.sampling_rate)
 
-        # if len(audio_file) >= self.sample_duration:
-        #     start_idx = random.randint(0, len(audio_file) - self.sample_duration)
-        # else:
-        #     start_idx = self.sample_skip_duration
-        # if self.mode == "train":
-        #     audio_file = audio_file[start_idx:self.sample_duration + start_idx]
-        # else:
-        #     audio_file = audio_file[self.sample_skip_duration:self.sample_duration + self.sample_skip_duration]
+        if len(audio_file) >= self.sample_duration:
+            start_idx = random.randint(0, len(audio_file) - self.sample_duration)
+        else:
+            start_idx = 0
+        if self.mode == "train":
+            audio_file = audio_file[start_idx:self.sample_duration + start_idx]
+        
 
         if audio_file.shape[0] < self.sample_duration:
             audio_file = np.hstack((audio_file, np.zeros((int(self.sample_duration) - audio_file.shape[0],))))
+        elif audio_file.shape[0] > self.sample_duration:
+            audio_file = audio_file[:self.sample_duration]
+
 
         mel = librosa.feature.melspectrogram(y=audio_file, sr=self.sampling_rate)
         mel_db = librosa.amplitude_to_db(mel, ref=np.max)
@@ -53,12 +55,7 @@ class GTZANDataModule(L.LightningDataModule):
     def __init__(self, data_dir: str = "./"):
         super().__init__()
         self.data_dir = data_dir
-        self.sampling_rate = 12000
-        self.duration = 30
-        self.skip_duration = 15
-        self.batch_size = 32
-        self.sample_duration = self.duration * self.sampling_rate
-        self.sample_skip_duration = self.skip_duration * self.sampling_rate
+        
 
     # def prepare_data(self):
     #     # download

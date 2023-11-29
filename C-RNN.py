@@ -49,7 +49,7 @@ class C_RNN(L.LightningModule):
            
         )
 
-        self.gru =  nn.GRU(83520, 256, 2, batch_first=True)
+        self.gru =  nn.GRU(128, 256, 1, batch_first=True)
         self.fc = nn.Sequential(torch.nn.Linear(256, 10),
                                 nn.Dropout(0.3))
 
@@ -65,9 +65,11 @@ class C_RNN(L.LightningModule):
         # print(X.shape)
         X = X.view(X.size(0), X.size(1), X.size(2) * X.size(3))
 
+        X = X.permute(0, 2, 1)
         # print(X.shape)
 
-        h0 = torch.randn(2, X.shape[0], 256).cuda()
+
+        h0 = torch.randn(1, X.shape[0], 256).cuda()
 
         X, hn = self.gru(X, h0)
 
