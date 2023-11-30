@@ -30,30 +30,35 @@ class C_RNN(L.LightningModule):
         self.num_classes = 10
 
         self.cnn_model = nn.Sequential(
-            nn.Conv2d(1, 64, (3, 3)),
+            nn.Conv2d(1, 64, (3, 3), padding='same'),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.MaxPool2d((2, 2)),
-            nn.Conv2d(64, 128, (3, 3)),
+            nn.Conv2d(64, 128, (3, 3), padding='same'),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.MaxPool2d((2, 2)),
-            nn.Conv2d(128, 128, (3, 3)),
+            nn.Conv2d(128, 128, (3, 3), padding='same'),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.MaxPool2d((2, 2)),
-            nn.Conv2d(128, 128, (3, 3)),
+            nn.Conv2d(128, 128, (3, 3), padding='same'),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.MaxPool2d((2, 2)),
+            nn.Conv2d(128, 64, (3, 3), padding='same'),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.MaxPool2d((4, 4)),
             )
 
         self.gru =  nn.GRU(128, 256, 1, batch_first=True)
-        self.fc = nn.Sequential(torch.nn.Linear(256, 10),
+        self.fc = nn.Sequential(torch.nn.Linear(512, 10),
                                 nn.Dropout(0.3))
 
         self.loss_fn = nn.CrossEntropyLoss()  
@@ -64,7 +69,9 @@ class C_RNN(L.LightningModule):
 
     def forward(self, X):
         X = X.to(torch.float32).cuda()
-        # X = self.cnn_model(X)
+        cnn = self.cnn_model(X)
+        cnn = cnn.view(cnn.size(0), -1)
+        
         print(X.shape)
         X = X.view(X.size(0), X.size(2), X.size(3))
 
@@ -77,8 +84,12 @@ class C_RNN(L.LightningModule):
         X, hn = self.gru(X, h0)
 
         output = X[:, -1, :]
+        print(cnn.shape)
+        print(output.shape)
+        # Concatenate cnn and output along the last dimension
+        combined = torch.cat((cnn, output), dim=1)
 
-        output = self.fc(output)
+        output = self.fc(combined)
 
         # print(output.shape)
 
