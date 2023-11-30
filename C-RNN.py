@@ -64,12 +64,12 @@ class C_RNN(L.LightningModule):
 
     def forward(self, X):
         X = X.to(torch.float32).cuda()
-        X = self.cnn_model(X)
-        # print(X.shape)
-        X = X.view(X.size(0), X.size(1), X.size(2) * X.size(3))
+        # X = self.cnn_model(X)
+        print(X.shape)
+        X = X.view(X.size(0), X.size(2), X.size(3))
 
         X = X.permute(0, 2, 1)
-        # print(X.shape)
+        print(X.shape)
 
 
         h0 = torch.randn(1, X.shape[0], 256).cuda()
