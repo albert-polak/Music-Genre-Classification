@@ -49,7 +49,8 @@ class GTZANDataset(Dataset):
 
         # Apply normalization here
         mel_db = (mel_db - np.mean(mel_db)) / np.std(mel_db)
-        mel_db = mel_db[np.newaxis, ...]       
+        # mel_db = mel_db[np.newaxis, ...]   
+        # mel_db = np.repeat(mel_db[np.newaxis, ...], 3, axis=0)    
         label_encoded = self.dataframe.iloc[idx]['label_encoded']
 
         return mel_db, label_encoded
