@@ -46,18 +46,20 @@ class GTZANDataset(Dataset):
         mel = librosa.feature.melspectrogram(y=audio_file, sr=self.sampling_rate)
         mel_db = librosa.amplitude_to_db(mel, ref=np.max)
         
-        mfcc = librosa.feature.mfcc(
-                y=audio_file, sr=self.sampling_rate, n_mfcc=13, hop_length=512
+        chroma_stft = librosa.feature.chroma_stft(
+                y=audio_file, sr=self.sampling_rate, hop_length=512
             )
         
-        mfcc = (mfcc - np.mean(mfcc)) / np.std(mfcc)
+        chroma_stft_db = librosa.amplitude_to_db(chroma_stft, ref=np.max)
+
+        chroma_stft_db = (chroma_stft - np.mean(chroma_stft)) / np.std(chroma_stft)
         # Apply normalization here
         mel_db = (mel_db - np.mean(mel_db)) / np.std(mel_db)
         # mel_db = mel_db[np.newaxis, ...]   
         # mel_db = np.repeat(mel_db[np.newaxis, ...], 3, axis=0)    
         label_encoded = self.dataframe.iloc[idx]['label_encoded']
 
-        return (mel_db, mfcc), label_encoded
+        return (mel_db, chroma_stft_db), label_encoded
 
 class GTZANDataModule(L.LightningDataModule):
     def __init__(self, data_dir: str = "./"):

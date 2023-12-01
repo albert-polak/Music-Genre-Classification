@@ -32,7 +32,7 @@ class C_RNN(L.LightningModule):
         self.cnn_model = models.resnext50_32x4d(weights=models.ResNeXt50_32X4D_Weights.IMAGENET1K_V2)
         self.cnn_model.fc = nn.Sequential()
         
-        self.gru =  nn.GRU(13, 512, 1, batch_first=True)
+        self.gru =  nn.GRU(12, 512, 1, batch_first=True)
         self.fc = nn.Sequential(torch.nn.Linear(2560, 2048),
                                 torch.nn.Linear(2048, 2048),
                                 torch.nn.Linear(2048, 10),
@@ -45,7 +45,7 @@ class C_RNN(L.LightningModule):
         self.optimizer = Adam(self.parameters(), lr=self.lr)  
 
     def forward(self, X):
-        mel, mfcc = X
+        mel, chroma = X
         print(mel.shape)
         cnn_input = np.repeat(mel[np.newaxis, ...].cpu(), 3, axis=0).cuda()
         cnn_input = cnn_input.permute(1, 0, 2, 3)
@@ -57,20 +57,20 @@ class C_RNN(L.LightningModule):
         # print(cnn_input.shape)
         cnn = self.cnn_model(cnn_input)
         cnn = cnn.view(cnn.size(0), -1)
-        mfcc = mfcc.to(torch.float32).cuda()
+        chroma = chroma.to(torch.float32).cuda()
         
         # print(X.shape)
         # X = X.view(X.size(0), X.size(2), X.size(3))
 
-        mfcc = mfcc.permute(0, 2, 1)
-        print(mfcc.shape)
+        chroma = chroma.permute(0, 2, 1)
+        print(chroma.shape)
 
 
-        h0 = torch.randn(1, mfcc.shape[0], 512).cuda()
+        h0 = torch.randn(1, chroma.shape[0], 512).cuda()
 
-        mfcc, hn = self.gru(mfcc, h0)
+        chroma, hn = self.gru(chroma, h0)
 
-        output = mfcc[:, -1, :]
+        output = chroma[:, -1, :]
         # print(cnn.shape)
         # print(output.shape)
         # Concatenate cnn and output along the last dimension
