@@ -32,8 +32,10 @@ class C_RNN(L.LightningModule):
         self.cnn_model = models.resnext50_32x4d(weights=models.ResNeXt50_32X4D_Weights.IMAGENET1K_V2)
         self.cnn_model.fc = nn.Sequential()
         
-        self.gru =  nn.GRU(128, 256, 1, batch_first=True)
-        self.fc = nn.Sequential(torch.nn.Linear(2304, 10),
+        self.gru =  nn.GRU(128, 512, 1, batch_first=True)
+        self.fc = nn.Sequential(torch.nn.Linear(2560, 2048),
+                                torch.nn.Linear(2048, 2048),
+                                torch.nn.Linear(2048, 10),
                                 nn.Dropout(0.3))
 
         self.loss_fn = nn.CrossEntropyLoss()  
@@ -63,7 +65,7 @@ class C_RNN(L.LightningModule):
         # print(X.shape)
 
 
-        h0 = torch.randn(1, X.shape[0], 256).cuda()
+        h0 = torch.randn(1, X.shape[0], 512).cuda()
 
         X, hn = self.gru(X, h0)
 
