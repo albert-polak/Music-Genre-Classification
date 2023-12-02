@@ -33,7 +33,8 @@ class C_RNN(L.LightningModule):
         self.cnn_model.fc = nn.Sequential()
         
         self.gru =  nn.GRU(12, 512, 1, batch_first=True)
-        self.fc = nn.Sequential(torch.nn.Linear(2560, 2048),
+        self.gru2 = nn.GRU(6, 512, 1, batch_first=True)
+        self.fc = nn.Sequential(torch.nn.Linear(3072, 2048),
                                 torch.nn.Linear(2048, 2048),
                                 torch.nn.Linear(2048, 10),
                                 nn.Dropout(0.3))
@@ -45,7 +46,7 @@ class C_RNN(L.LightningModule):
         self.optimizer = Adam(self.parameters(), lr=self.lr)  
 
     def forward(self, X):
-        mel, chroma = X
+        mel, chroma, tonetz = X
         # print(mel.shape)
         cnn_input = np.repeat(mel[np.newaxis, ...].cpu(), 3, axis=0).cuda()
         cnn_input = cnn_input.permute(1, 0, 2, 3)
@@ -70,11 +71,26 @@ class C_RNN(L.LightningModule):
 
         chroma, hn = self.gru(chroma, h0)
 
-        output = chroma[:, -1, :]
+        chroma_output = chroma[:, -1, :]
+
+        tonetz = tonetz.to(torch.float32).cuda()
+        
+        # print(X.shape)
+        # X = X.view(X.size(0), X.size(2), X.size(3))
+
+        tonetz = tonetz.permute(0, 2, 1)
+        print(tonetz.shape)
+
+
+        h0 = torch.randn(1, tonetz.shape[0], 512).cuda()
+
+        tonetz, hn = self.gru2(tonetz, h0)
+
+        tonetz_output = tonetz[:, -1, :]
         # print(cnn.shape)
         # print(output.shape)
         # Concatenate cnn and output along the last dimension
-        combined = torch.cat((cnn, output), dim=1)
+        combined = torch.cat((cnn, chroma_output, tonetz_output), dim=1)
 
         output = self.fc(combined)
 
