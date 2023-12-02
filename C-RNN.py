@@ -46,7 +46,7 @@ class C_RNN(L.LightningModule):
 
     def forward(self, X):
         mel, chroma = X
-        print(mel.shape)
+        # print(mel.shape)
         cnn_input = np.repeat(mel[np.newaxis, ...].cpu(), 3, axis=0).cuda()
         cnn_input = cnn_input.permute(1, 0, 2, 3)
         # print(cnn_input.shape)
@@ -63,7 +63,7 @@ class C_RNN(L.LightningModule):
         # X = X.view(X.size(0), X.size(2), X.size(3))
 
         chroma = chroma.permute(0, 2, 1)
-        print(chroma.shape)
+        # print(chroma.shape)
 
 
         h0 = torch.randn(1, chroma.shape[0], 512).cuda()
